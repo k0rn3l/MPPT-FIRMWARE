@@ -60,31 +60,41 @@
  *  - B1212 DC-DC Isolated Converter
  *  - SS310 Diodes
  */
-//================================ MPPT FIRMWARE LCD MENU INFO =====================================//
-// The lines below are for the Firmware Version info displayed on the MPPT's LCD Menu Interface     //
-//==================================================================================================//
-String 
-firmwareInfo      = "V1.10   ",
-firmwareDate      = "30/08/21",
-firmwareContactR1 = "www.youtube.com/",  
-firmwareContactR2 = "TechBuilder     ";        
            
 //====================== ARDUINO LIBRARIES (ESP32 Compatible Libraries) ============================//
 // You will have to download and install the following libraries below in order to program the MPPT //
 // unit. Visit TechBuilder's YouTube channel for the "MPPT" tutorial.                               //
 //============================================================================================= ====//
+#include "arduino_secrets.h"        // file containing secrets - wifi etc.
 #include <EEPROM.h>                 //SYSTEM PARAMETER  - EEPROM Library (By: Arduino)
 #include <Wire.h>                   //SYSTEM PARAMETER  - WIRE Library (By: Arduino)
 #include <SPI.h>                    //SYSTEM PARAMETER  - SPI Library (By: Arduino)
 #include <WiFi.h>                   //SYSTEM PARAMETER  - WiFi Library (By: Arduino)
 #include <WiFiClient.h>             //SYSTEM PARAMETER  - WiFi Library (By: Arduino)
-#include <BlynkSimpleEsp32.h>       //SYSTEM PARAMETER  - Blynk WiFi Library For Phone App 
 #include <LiquidCrystal_I2C.h>      //SYSTEM PARAMETER  - ESP32 LCD Compatible Library (By: Robojax)
 #include <Adafruit_ADS1X15.h>       //SYSTEM PARAMETER  - ADS1115/ADS1015 ADC Library (By: Adafruit)
 LiquidCrystal_I2C lcd(0x27,16,2);   //SYSTEM PARAMETER  - Configure LCD RowCol Size and I2C Address
 TaskHandle_t Core2;                 //SYSTEM PARAMETER  - Used for the ESP32 dual core operation
 Adafruit_ADS1015 ads;               //SYSTEM PARAMETER  - ADS1015 ADC Library (By: Adafruit) Kindly delete this line if you are using ADS1115
 //Adafruit_ADS1115 ads;             //SYSTEM PARAMETER  - ADS1115 ADC Library (By: Adafruit) Kindly uncomment this if you are using ADS1115
+//===OTA libs
+#include <ESPmDNS.h>
+#include <WiFiUdp.h>
+#include <ArduinoOTA.h>
+//===webserver libs
+#include <Arduino.h>
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
+
+//================================ MPPT FIRMWARE LCD MENU INFO =====================================//
+// The lines below are for the Firmware Version info displayed on the MPPT's LCD Menu Interface     //
+//==================================================================================================//
+String 
+firmwareInfo      = "V1.1.1   ",
+firmwareDate      = "23/06/22",
+firmwareContactR1 = "YT/TechBuilder",  
+firmwareContactR2 = "Kornel-MOD     ";        
 
 //====================================== USER PARAMETERS ===========================================//
 // The parameters below are the default parameters used when the MPPT charger settings have not     //
@@ -109,9 +119,8 @@ Adafruit_ADS1015 ads;               //SYSTEM PARAMETER  - ADS1015 ADC Library (B
 // from email after registering from the Blynk platform.                                            //
 //==================================================================================================//
 char 
-auth[] = "InputBlynkAuthenticationToken",   //   USER PARAMETER - Input Blynk Authentication Token (From email after registration)
-ssid[] = "InputWiFiSSID",                   //   USER PARAMETER - Enter Your WiFi SSID
-pass[] = "InputWiFiPassword";               //   USER PARAMETER - Enter Your WiFi Password
+ssid[] = SECRET_SSID,                   //   USER PARAMETER - Define Your WiFi SSID in arduino_secrets.h
+wifipass[] = SECRET_WIFIPASS;               //   USER PARAMETER - Define Your WiFi Password in arduino_secrets.h
 
 //====================================== USER PARAMETERS ==========================================//
 // The parameters below are the default parameters used when the MPPT charger settings have not    //
@@ -125,7 +134,6 @@ disableFlashAutoLoad    = 0,           //   USER PARAMETER - Forces the MPPT to 
 enablePPWM              = 1,           //   USER PARAMETER - Enables Predictive PWM, this accelerates regulation speed (only applicable for battery charging application)
 enableWiFi              = 1,           //   USER PARAMETER - Enable WiFi Connection
 enableFan               = 1,           //   USER PARAMETER - Enable Cooling Fan
-enableBluetooth         = 1,           //   USER PARAMETER - Enable Bluetooth Connection
 enableLCD               = 1,           //   USER PARAMETER - Enable LCD display
 enableLCDBacklight      = 1,           //   USER PARAMETER - Enable LCD display's backlight
 overrideFan             = 0,           //   USER PARAMETER - Fan always on
@@ -297,8 +305,7 @@ void coreTwo(void * pvParameters){
  setupWiFi();                                              //TAB#7 - WiFi Initialization
 //================= CORE0: LOOP (DUAL CORE MODE) ======================//
   while(1){
-    Wireless_Telemetry();                                   //TAB#7 - Wireless telemetry (WiFi & Bluetooth)
-    
+    // no code yet
 }}
 //================== CORE1: SETUP (DUAL CORE MODE) ====================//
 void setup() { 
