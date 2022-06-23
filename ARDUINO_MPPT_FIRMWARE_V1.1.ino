@@ -1,12 +1,9 @@
 /*  PROJECT FUGU FIRMWARE V1.10  (DIY 1kW Open Source MPPT Solar Charge Controller)
  *  By: TechBuilder (Angelo Casimiro)
- *  FIRMWARE STATUS: Verified Stable Build Version
- *  (Contact me for the experimental beta versions)
- *  -----------------------------------------------------------------------------------------------------------
- *  DATE CREATED:  02/07/2021 
- *  DATE MODIFIED: 30/08/2021
- *  -----------------------------------------------------------------------------------------------------------
+ *  !!!!!!!!!code fork by k0rn3l - UNTESTED!!!!!!!!!!!
+ *  FIRMWARE STATUS: UNSTABLE
  *  CONTACTS:
+ *  https://github.com/k0rn3l
  *  GitHub - www.github.com/AngeloCasi (New firmware releases will only be available on GitHub Link)
  *  Email - casithebuilder@gmail.com
  *  YouTube - www.youtube.com/TechBuilder
@@ -70,7 +67,6 @@
 #include <Wire.h>                   //SYSTEM PARAMETER  - WIRE Library (By: Arduino)
 #include <SPI.h>                    //SYSTEM PARAMETER  - SPI Library (By: Arduino)
 #include <WiFi.h>                   //SYSTEM PARAMETER  - WiFi Library (By: Arduino)
-#include <WiFiClient.h>             //SYSTEM PARAMETER  - WiFi Library (By: Arduino)
 #include <LiquidCrystal_I2C.h>      //SYSTEM PARAMETER  - ESP32 LCD Compatible Library (By: Robojax)
 #include <Adafruit_ADS1X15.h>       //SYSTEM PARAMETER  - ADS1115/ADS1015 ADC Library (By: Adafruit)
 LiquidCrystal_I2C lcd(0x27,16,2);   //SYSTEM PARAMETER  - Configure LCD RowCol Size and I2C Address
@@ -91,10 +87,10 @@ Adafruit_ADS1015 ads;               //SYSTEM PARAMETER  - ADS1015 ADC Library (B
 // The lines below are for the Firmware Version info displayed on the MPPT's LCD Menu Interface     //
 //==================================================================================================//
 String 
-firmwareInfo      = "V1.1.1   ",
-firmwareDate      = "23/06/22",
+firmwareInfo      = "v0.1.1   ",
+firmwareDate      = __DATE__,
 firmwareContactR1 = "YT/TechBuilder",  
-firmwareContactR2 = "Kornel-MOD     ";        
+firmwareContactR2 = "K0rn3l-MOD     ";        
 
 //====================================== USER PARAMETERS ===========================================//
 // The parameters below are the default parameters used when the MPPT charger settings have not     //
@@ -113,11 +109,6 @@ firmwareContactR2 = "Kornel-MOD     ";
 #define buttonBack      19          //SYSTEM PARAMETER - 
 #define buttonSelect    23          //SYSTEM PARAMETER -
 
-//========================================= WiFi SSID ==============================================//
-// This MPPT firmware uses the Blynk phone app and arduino library for controls and data telemetry  //
-// Fill in your WiFi SSID and password. You will also have to get your own authentication token     //
-// from email after registering from the Blynk platform.                                            //
-//==================================================================================================//
 char 
 ssid[] = SECRET_SSID,                   //   USER PARAMETER - Define Your WiFi SSID in arduino_secrets.h
 wifipass[] = SECRET_WIFIPASS;               //   USER PARAMETER - Define Your WiFi Password in arduino_secrets.h
@@ -133,6 +124,7 @@ output_Mode             = 1,           //   USER PARAMETER - 0 = PSU MODE, 1 = C
 disableFlashAutoLoad    = 0,           //   USER PARAMETER - Forces the MPPT to not use flash saved settings, enabling this "1" defaults to programmed firmware settings.
 enablePPWM              = 1,           //   USER PARAMETER - Enables Predictive PWM, this accelerates regulation speed (only applicable for battery charging application)
 enableWiFi              = 1,           //   USER PARAMETER - Enable WiFi Connection
+enableOTA               = 1,           //   USER PARAMETER - Enable OTA firmware update
 enableFan               = 1,           //   USER PARAMETER - Enable Cooling Fan
 enableLCD               = 1,           //   USER PARAMETER - Enable LCD display
 enableLCDBacklight      = 1,           //   USER PARAMETER - Enable LCD display's backlight
@@ -153,7 +145,7 @@ millisLCDInterval       = 1000,        //  USER PARAMETER - Time Interval Refres
 millisWiFiInterval      = 2000,        //  USER PARAMETER - Time Interval Refresh Rate For WiFi Telemetry (ms)
 millisLCDBackLInterval  = 2000,        //  USER PARAMETER - Time Interval Refresh Rate For WiFi Telemetry (ms)
 backlightSleepMode      = 0,           //  USER PARAMETER - 0 = Never, 1 = 10secs, 2 = 5mins, 3 = 1hr, 4 = 6 hrs, 5 = 12hrs, 6 = 1 day, 7 = 3 days, 8 = 1wk, 9 = 1month
-baudRate                = 500000;      //  USER PARAMETER - USB Serial Baud Rate (bps)
+baudRate                = 115200;      //  USER PARAMETER - USB Serial Baud Rate (bps)
 
 float 
 voltageBatteryMax       = 27.3000,     //   USER PARAMETER - Maximum Battery Charging Voltage (Output V)
@@ -303,9 +295,10 @@ secondsElapsed        = 0;           //SYSTEM PARAMETER -
 //================= CORE0: SETUP (DUAL CORE MODE) =====================//
 void coreTwo(void * pvParameters){
  setupWiFi();                                              //TAB#7 - WiFi Initialization
+ setupOTA();
 //================= CORE0: LOOP (DUAL CORE MODE) ======================//
   while(1){
-    // no code yet
+    if(enableWiFi==1 && enableOTA==1){ArduinoOTA.handle();}
 }}
 //================== CORE1: SETUP (DUAL CORE MODE) ====================//
 void setup() { 
@@ -313,7 +306,10 @@ void setup() {
   //SERIAL INITIALIZATION          
   Serial.begin(baudRate);                                   //Set serial baud rate
   Serial.println("> Serial Initialized");                   //Startup message
-  
+  Serial.print("> FW version: ");
+  Serial.println(firmwareInfo);
+  Serial.print("> FW build date: ");
+  Serial.println(firmwareDate);
   //GPIO PIN INITIALIZATION
   pinMode(backflow_MOSFET,OUTPUT);                          
   pinMode(buck_EN,OUTPUT);
